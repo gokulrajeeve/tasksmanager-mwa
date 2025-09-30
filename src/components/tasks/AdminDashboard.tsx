@@ -14,8 +14,7 @@ type User = {
   email: string;
 };
 
-const CATEGORY_KEYS = ["webinar", "live event", "outreach", "roundtable"] as const;
-type CategoryKey = typeof CATEGORY_KEYS[number];
+type CategoryKey = "webinar" | "live event" | "outreach" | "roundtable";
 type FilterKey = "all" | CategoryKey;
 
 export default function AdminDashboard() {
@@ -68,18 +67,26 @@ export default function AdminDashboard() {
 
       setTasks((prev) => [created, ...prev]);
       setIsModalOpen(false); // close modal after success
-    } catch (err: any) {
-      console.error("Error creating task:", err.message);
-    }
+} catch (err) {
+  if (err instanceof Error) {
+    console.error("Error creating task:", err.message);
+  } else {
+    console.error("Unknown error creating task:", err);
+  }
+}
   }
 
   async function handleAssigneeChange(taskId: string, newAssignee: string) {
     try {
       const updated = await updateTaskAssignee(taskId, newAssignee || null);
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-    } catch (err: any) {
-      console.error("Error updating assignee:", err.message);
-    }
+} catch (err) {
+  if (err instanceof Error) {
+    console.error("Error updating assignee:", err.message);
+  } else {
+    console.error("Unknown error updating assignee:", err);
+  }
+}
   }
 
   // Filtered tasks based on selected category

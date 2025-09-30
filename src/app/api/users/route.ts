@@ -21,6 +21,5 @@ export async function GET() {
     email: u.email,
   }));
 
-  console.log("Users fetched:", safeUsers); // server log
   return NextResponse.json(safeUsers);
 }
