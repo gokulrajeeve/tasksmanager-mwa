@@ -1,7 +1,10 @@
+import LogoutButton from "@/components/auth/LogoutButton";
+
 export default function LogoutPage() {
   return (
-    <main>
-      <h1>Logging out...</h1>
+    <main className="p-6">
+      <h1>Logout</h1>
+      <LogoutButton />
     </main>
   );
 }
