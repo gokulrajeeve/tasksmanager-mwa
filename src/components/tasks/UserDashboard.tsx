@@ -2,14 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getUserTasks,updateTaskStatus } from "@/utils/taskServices";
+import { getUserTasks, updateTaskStatus } from "@/utils/taskServices";
 import { Task } from "@/utils/types";
 import Loader from "@/components/layout/Loader";
+import TaskCard from "./TaskCard";
 
 export default function UserDashboard() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 🔹 Track selected category filter
+  const [selectedCategory, setSelectedCategory] = useState<
+    "all" | "webinar" | "live event" | "outreach" | "roundtable"
+  >("all");
 
   useEffect(() => {
     if (user) {
@@ -18,41 +24,100 @@ export default function UserDashboard() {
         .finally(() => setLoading(false));
     }
   }, [user]);
+
   async function handleStatusChange(taskId: string, newStatus: string) {
-  try {
-    const updated = await updateTaskStatus(taskId, newStatus);
-    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-  } catch (err: any) {
-    console.error("Error updating status:", err.message);
+    try {
+      const updated = await updateTaskStatus(taskId, newStatus);
+      setTasks((prev) =>
+        prev.map((t) => (t.id === updated.id ? updated : t))
+      );
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error("Error updating status:", err.message);
+      } else {
+        console.error("Error updating status:", err);
+      }
+    }
   }
-}
 
   if (loading) return <Loader />;
 
+  // 🔹 Filtered tasks based on selected category
+  const filteredTasks =
+    selectedCategory === "all"
+      ? tasks
+      : tasks.filter((task) => task.category === selectedCategory);
+
+  // 🔹 Categories for buttons
+  const categories: {
+    key: "all" | "webinar" | "live event" | "outreach" | "roundtable";
+    label: string;
+  }[] = [
+    { key: "all", label: "All Categories" },
+    { key: "webinar", label: "Webinar" },
+    { key: "live event", label: "Live Event" },
+    { key: "outreach", label: "Outreach" },
+    { key: "roundtable", label: "Roundtable" },
+  ];
+
+  // 🔹 Category → Active Button Colors
+  const activeColors: Record<
+    "all" | "webinar" | "live event" | "outreach" | "roundtable",
+    string
+  > = {
+    all: "bg-indigo-600 text-white",
+    webinar: "bg-blue-600 text-white",
+    "live event": "bg-purple-600 text-white",
+    outreach: "bg-orange-600 text-white",
+    roundtable: "bg-pink-600 text-white",
+  };
+
+  // 🔹 Count tasks per category
+  const categoryCounts: Record<
+    "all" | "webinar" | "live event" | "outreach" | "roundtable",
+    number
+  > = {
+    all: tasks.length,
+    webinar: tasks.filter((t) => t.category === "webinar").length,
+    "live event": tasks.filter((t) => t.category === "live event").length,
+    outreach: tasks.filter((t) => t.category === "outreach").length,
+    roundtable: tasks.filter((t) => t.category === "roundtable").length,
+  };
+
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 text-gray-900">My Tasks</h2>
-      {tasks.length === 0 ? (
-        <p className="text-gray-600">No tasks assigned yet.</p>
+      <h2 className="text-2xl font-bold mb-6 text-gray-900">My Tasks</h2>
+
+      {/* 🔹 Category Filter Buttons */}
+      <div className="grid grid-cols-5 gap-3 mb-8">
+        {categories.map((cat) => (
+          <button
+            key={cat.key}
+            onClick={() => setSelectedCategory(cat.key)}
+            className={`py-2 px-3 rounded-lg text-sm font-medium transition flex flex-col items-center ${
+              selectedCategory === cat.key
+                ? activeColors[cat.key]
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            <span>{cat.label}</span>
+            <span className="text-xs opacity-80">
+              {categoryCounts[cat.key]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {filteredTasks.length === 0 ? (
+        <p className="text-gray-700">No tasks found for this category.</p>
       ) : (
         <ul className="space-y-3">
-          {tasks.map((task) => (
-            <li key={task.id} className="p-4 border rounded-lg shadow-sm bg-white">
-              <h3 className="font-semibold  text-gray-900">{task.title}</h3>
-              <p className="text-gray-600">{task.description}</p>
-              <div className="mt-2 flex items-center gap-2">
-  <label className="text-sm text-gray-800">Status</label>
-  <select
-    value={task.status}
-    onChange={(e) => handleStatusChange(task.id, e.target.value)}
-    className="px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2  text-gray-900 focus:ring-indigo-400"
-  >
-    <option value="todo">To Do</option>
-    <option value="in-progress">In Progress</option>
-    <option value="done">Done</option>
-  </select>
-</div>
-            </li>
+          {filteredTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onStatusChange={handleStatusChange}
+            />
           ))}
         </ul>
       )}
