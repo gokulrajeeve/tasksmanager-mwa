@@ -1,10 +1,11 @@
 export type Task = {
   id: string;
   owner_id: string;
-  assigned_to?: string;
+  assigned_to?: string | null;
   title: string;
-  description?: string;
+  description?: string | null;
   status: "todo" | "in-progress" | "done";
+  category: "webinar" | "live event" | "outreach" | "roundtable"; // ✅ enum
   created_at: string;
 };
 

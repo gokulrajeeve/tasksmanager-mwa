@@ -25,7 +25,14 @@ export async function getAllTasks() {
 }
 
 // Create new task (admin only)
-export async function createTask(task: Omit<Task, "id" | "created_at">) {
+export async function createTask(task: {
+  owner_id: string;
+  assigned_to?: string | null;
+  title: string;
+  description?: string;
+  status: string;
+  category: "webinar" | "live event" | "outreach" | "roundtable";
+}) {
   const { data, error } = await supabase.from("tasks").insert(task).select().single();
   if (error) throw new Error(error.message);
   return data as Task;
@@ -36,6 +43,18 @@ export async function updateTaskStatus(taskId: string, status: string) {
   const { data, error } = await supabase
     .from("tasks")
     .update({ status })
+    .eq("id", taskId)
+    .select()
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data as Task;
+}
+// Update assigned user for a task
+export async function updateTaskAssignee(taskId: string, assignedTo: string | null) {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ assigned_to: assignedTo })
     .eq("id", taskId)
     .select()
     .single();
