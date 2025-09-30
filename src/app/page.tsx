@@ -10,19 +10,21 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
+
   if (loading) {
     return <p className="text-center mt-10">Loading...</p>;
   }
 
   if (!user) {
-    // not logged in → redirect to login
-    useEffect(() => {
-      router.push("/login");
-    }, [router]);
     return null;
   }
 
-  // logged in → show correct dashboard
   const isAdmin = user?.user_metadata?.role === "admin";
 
   return (
