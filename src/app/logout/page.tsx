@@ -1,10 +1,10 @@
-import LogoutButton from "@/components/auth/LogoutButton";
+import AuthLayout from "@/components/layout/AuthLayout";
+import RegisterForm from "@/components/auth/RegisterForm";
 
-export default function LogoutPage() {
+export default function RegisterPage() {
   return (
-    <main className="p-6">
-      <h1>Logout</h1>
-      <LogoutButton />
-    </main>
+    <AuthLayout>
+      <RegisterForm />
+    </AuthLayout>
   );
 }

@@ -1,6 +1,6 @@
 export type Task = {
   id: string;
-  user_id: string;
+  owner_id: string;
   assigned_to?: string;
   title: string;
   description?: string;

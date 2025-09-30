@@ -30,12 +30,14 @@ export default function RegisterForm() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Create Account</h2>
+      <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Create Account</h2>
       <form onSubmit={handleRegister} className="space-y-4">
         <input
           type="email"
           placeholder="Email address"
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-gray-600 focus:outline-none bg-gray-50 text-gray-700"
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 
+                     text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 
+                     focus:border-indigo-400 transition shadow-sm"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -43,7 +45,9 @@ export default function RegisterForm() {
         <input
           type="password"
           placeholder="Password"
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-gray-600 focus:outline-none bg-gray-50 text-gray-700"
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 
+                     text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 
+                     focus:border-indigo-400 transition shadow-sm"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -51,16 +55,26 @@ export default function RegisterForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-lg bg-gray-800 text-white font-semibold hover:bg-gray-900 transition"
+          className="w-full py-3 rounded-lg bg-gray-900 text-white font-semibold 
+                     hover:bg-gray-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none 
+                     transform hover:scale-[1.01] active:scale-[0.99] transition-all shadow-md"
         >
           {loading ? "Registering..." : "Register"}
         </button>
       </form>
-      {error && <p className="text-red-500 text-sm mt-3 text-center">{error}</p>}
-      {success && <p className="text-green-600 text-sm mt-3 text-center">Account created! You can now log in.</p>}
+      {error && (
+        <p className="mt-4 text-sm px-3 py-2 rounded-lg bg-red-100 text-red-700 text-center">
+          {error}
+        </p>
+      )}
+      {success && (
+        <p className="mt-4 text-sm px-3 py-2 rounded-lg bg-green-100 text-green-700 text-center">
+          Account created! You can now log in.
+        </p>
+      )}
       <p className="mt-6 text-center text-gray-600">
         Already have an account?{" "}
-        <a href="/login" className="text-gray-800 hover:underline font-medium">
+        <a href="/login" className="text-black-500 hover:underline font-medium">
           Login
         </a>
       </p>
