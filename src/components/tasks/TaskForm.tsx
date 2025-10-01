@@ -10,31 +10,44 @@ type TaskFormProps = {
     assigned_to?: string | null;
     category: Task["category"];
   }) => Promise<void>;
-  users: { id: string; email: string }[];
+  users?: { id: string; email: string }[];
+  variant?: "admin" | "user";   // 👈 controls whether to show assignee
+  currentUserId?: string;       // 👈 used in user mode
 };
 
-export default function TaskForm({ onSubmit, users }: TaskFormProps) {
+export default function TaskForm({
+  onSubmit,
+  users = [],
+  variant = "admin",
+  currentUserId,
+}: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [category, setCategory] = useState<Task["category"] | "">("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const isUserMode = variant === "user";
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+
     await onSubmit({
       title,
       description,
-      assigned_to: assignedTo || null,
       category: category as Task["category"],
+      assigned_to: isUserMode
+        ? (currentUserId ?? null)
+        : (assignedTo || null),
     });
+
     setTitle("");
     setDescription("");
     setAssignedTo("");
     setCategory("");
     setLoading(false);
-  };
+  }
 
   return (
     <form
@@ -43,12 +56,12 @@ export default function TaskForm({ onSubmit, users }: TaskFormProps) {
     >
       {/* Title */}
       <h3 className="text-2xl font-bold text-gray-900 mb-6">
-         Create a New Task
+        {isUserMode ? "Create My Task" : "Create a New Task"}
       </h3>
 
       {/* Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Title Field */}
+        {/* Task Title */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Task Title
@@ -98,34 +111,36 @@ export default function TaskForm({ onSubmit, users }: TaskFormProps) {
           />
         </div>
 
-        {/* Assignee */}
-<div className="md:col-span-2">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Assign To
-  </label>
-  <select
-    value={assignedTo}
-    onChange={(e) => setAssignedTo(e.target.value)}
-    className="w-full px-4 py-3 border rounded-lg  text-gray-700 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-  >
-    <option value="">Unassigned</option>
-    {users.map((u) => (
-      <option key={u.id} value={u.id}>
-        {u.email}
-      </option>
-    ))}
-  </select>
-</div>
+        {/* Assignee (Admin only) */}
+        {!isUserMode && (
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assign To
+            </label>
+            <select
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+            >
+              <option value="">Unassigned</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Submit Button */}
+      {/* Submit */}
       <div className="pt-4">
         <button
           type="submit"
           disabled={loading}
           className="w-full py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition disabled:opacity-50"
         >
-          {loading ? "Creating..." : "Create Task"}
+          {loading ? "Creating..." : isUserMode ? "Create My Task" : "Create Task"}
         </button>
       </div>
     </form>
