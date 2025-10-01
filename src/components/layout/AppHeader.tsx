@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import LogoutButton from "@/components/auth/LogoutButton";
 
@@ -13,7 +14,29 @@ function getInitials(email?: string | null) {
 }
 
 export default function AppHeader() {
+  const pathname = usePathname();
   const { user } = useAuth();
+
+  // If on login or register, show just the logo
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+if (isAuthPage) {
+  return (
+    <header className="sticky top-0 z-40 bg-transparent shadow-none border-none">
+      <div className="h-16 flex items-center justify-center px-6">
+        <Link href="/" className="group inline-flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-gray-900 text-white grid place-items-center font-extrabold tracking-tight">
+            M
+          </div>
+          <div className="leading-tight">
+            <div className="font-semibold text-gray-900">MWA Tasks</div>
+            <div className="text-xs text-gray-700 -mt-0.5">Task Manager</div>
+          </div>
+        </Link>
+      </div>
+    </header>
+  );
+}
+  // Otherwise show the full header (dashboard and app)
   const role = (user?.user_metadata?.role as string) || "user";
   const roleStyles =
     role === "admin"
@@ -37,7 +60,9 @@ export default function AppHeader() {
         {/* Right side */}
         <div className="flex items-center gap-3">
           {/* Role chip */}
-          <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${roleStyles}`}>
+          <span
+            className={`px-2.5 py-1 text-xs font-semibold rounded-full ${roleStyles}`}
+          >
             {role === "admin" ? "Admin" : "User"}
           </span>
 

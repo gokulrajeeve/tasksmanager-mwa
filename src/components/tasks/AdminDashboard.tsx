@@ -3,11 +3,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { getAllTasks, createTask, updateTaskAssignee } from "@/utils/taskServices";
 import { Task } from "@/utils/types";
-import Loader from "@/components/layout/Loader";
+import SkeletonDashboard from "./SkeletonDashboard";
 import { useAuth } from "@/components/auth/AuthProvider";
 import TaskCard from "./TaskCard";
 import Modal from "@/components/layout/Modal";
 import TaskForm from "./TaskForm";
+import TaskFilter from "./TaskFilter";
 
 type User = {
   id: string;
@@ -23,9 +24,11 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<FilterKey>("all");
-
-  // modal state
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 🔹 Search state
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchTasks();
@@ -66,36 +69,59 @@ export default function AdminDashboard() {
       });
 
       setTasks((prev) => [created, ...prev]);
-      setIsModalOpen(false); // close modal after success
-} catch (err) {
-  if (err instanceof Error) {
-    console.error("Error creating task:", err.message);
-  } else {
-    console.error("Unknown error creating task:", err);
-  }
-}
+      setIsModalOpen(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error("Error creating task:", err.message);
+      } else {
+        console.error("Unknown error creating task:", err);
+      }
+    }
   }
 
-  async function handleAssigneeChange(taskId: string, newAssignee: string) {
+  async function handleAssigneeChange(taskId: string, newAssignee: string | null) {
     try {
       const updated = await updateTaskAssignee(taskId, newAssignee || null);
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-} catch (err) {
-  if (err instanceof Error) {
-    console.error("Error updating assignee:", err.message);
-  } else {
-    console.error("Unknown error updating assignee:", err);
-  }
-}
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error("Error updating assignee:", err.message);
+      } else {
+        console.error("Unknown error updating assignee:", err);
+      }
+    }
   }
 
-  // Filtered tasks based on selected category
-  const filteredTasks =
-    selectedCategory === "all"
-      ? tasks
-      : tasks.filter((task) => task.category === selectedCategory);
+  async function handleDeleteTasks() {
+    if (selectedTasks.length === 0) return;
 
-  // Count tasks per category
+    try {
+      const res = await fetch("/api/delete-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedTasks }),
+      });
+
+      const result = await res.json();
+      if (result.error) throw new Error(result.error);
+
+      setTasks((prev) => prev.filter((t) => !selectedTasks.includes(t.id)));
+      setSelectedTasks([]);
+    } catch (err) {
+      console.error("Error deleting tasks:", err);
+    }
+  }
+
+  // 🔹 Combine category & search
+  const filteredTasks = tasks.filter((task) => {
+    const matchesCategory =
+      selectedCategory === "all" || task.category === selectedCategory;
+    const matchesQuery =
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesQuery;
+  });
+
   const countsByCategory = useMemo(() => {
     const base: Record<CategoryKey, number> = {
       webinar: 0,
@@ -111,7 +137,6 @@ export default function AdminDashboard() {
 
   const totalCount = tasks.length;
 
-  // Button color mapping for active state
   const activeClassesFor = (key: FilterKey) => {
     switch (key) {
       case "webinar":
@@ -136,48 +161,43 @@ export default function AdminDashboard() {
     { key: "roundtable", label: "Roundtable", count: countsByCategory.roundtable },
   ];
 
-  if (loading) return <Loader />;
+  if (loading) return <SkeletonDashboard />;
 
   return (
     <div>
+      {/* Top header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Admin Panel</h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-        >
-          + Create New Task
-        </button>
+        <div className="flex gap-3">
+          {selectedTasks.length > 0 && (
+            <button
+              onClick={handleDeleteTasks}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Delete Selected ({selectedTasks.length})
+            </button>
+          )}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            + Create New Task
+          </button>
+        </div>
       </div>
 
-      {/* Category Filter Buttons */}
-      <div className="grid grid-cols-5 gap-3 mb-8">
-        {buttons.map(({ key, label, count }) => {
-          const active = selectedCategory === key;
-          return (
-            <button
-              key={key}
-              onClick={() => setSelectedCategory(key)}
-              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition ${
-                active ? activeClassesFor(key) : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <span>{label}</span>
-              <span
-                className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                  active ? "bg-white/20 text-white" : "bg-gray-300 text-gray-800"
-                }`}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+<TaskFilter
+  selectedCategory={selectedCategory}
+  setSelectedCategory={setSelectedCategory}
+  searchQuery={searchQuery}
+  setSearchQuery={setSearchQuery}
+  countsByCategory={countsByCategory}
+  totalCount={totalCount}
+/>
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
-        <p className="text-gray-600">No tasks created yet.</p>
+        <p className="text-gray-600">No tasks match your search.</p>
       ) : (
         <ul className="space-y-3">
           {filteredTasks.map((task) => (
@@ -188,12 +208,17 @@ export default function AdminDashboard() {
               users={users}
               onAssigneeChange={handleAssigneeChange}
               onCategorySelect={(cat: Task["category"]) => setSelectedCategory(cat)}
+              onSelectTask={(id, checked) =>
+                setSelectedTasks((prev) =>
+                  checked ? [...prev, id] : prev.filter((tid) => tid !== id)
+                )
+              }
+              selected={selectedTasks.includes(task.id)}
             />
           ))}
         </ul>
       )}
 
-      {/* Modal for Task Form */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <TaskForm onSubmit={handleCreateTask} users={users} />
       </Modal>
